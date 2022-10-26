@@ -148,4 +148,3 @@ lasso_regressor=GridSearchCV(lasso,parameters,scoring='neg_mean_squared_error',c
 lasso_regressor.fit(X_train,y_train)
 print(lasso_regressor.best_params_)
 print(lasso_regressor.best_score_)
-
