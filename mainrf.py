@@ -1,49 +1,55 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import RandomizedSearchCV
+import numpy as np                              
+import pandas as pd     
+match = pd.read_csv('ipl.csv')  
+match = match.drop(['mid', 'date', 'venue'], axis = 1)   
+y = match['total']                                      
+y.head(10)       
+X = match.drop('total',axis=1) 
+print(X.info)
+#printing null values
+print("checking for null values")
+print(X.isnull().sum().sum())
 
-df=pd.read_csv('ipl.csv')
-# print(sns.pairplot(df))
-df.head()
-x=df.drop(columns=["date","total"],axis=1)
-y=df["total"]
-df.isnull().sum()
-from datetime import datetime as dt
-df['date']=df['date'].apply(lambda x:dt.strptime(x,'%Y-%m-%d'))
+from sklearn.preprocessing import LabelEncoder  
+labeled = LabelEncoder()         
 
-print(df.describe())
-final_df=df.drop(['venue'],axis=1)
-final_df=pd.get_dummies(final_df)
-y_train=final_df[final_df['date'].dt.year <=2016 ]['total']
-y_test= final_df[final_df['date'].dt.year >2016 ]['total']
-X_train=final_df.drop(['total'],axis=1)[final_df['date'].dt.year <=2016].drop(['date'],axis=1)
-X_test=final_df.drop(['total'],axis=1)[final_df['date'].dt.year >2016].drop(['date'],axis=1)
-print(X_train.isnull().sum())
+X['bat_team'] = labeled.fit_transform(X['bat_team'])
+X['bat_team'].head(10)    
 
-regressor=RandomForestRegressor()
-n_estimators=[50,100,150,200,250]
-max_depth=[5,10,15,20,25,30,35]
-max_features=['auto', 'sqrt']
-min_samples_split=[2, 5, 10, 15, 100]
-min_samples_leaf=[1, 2, 5, 10]
-parameters={
-     'n_estimators':n_estimators,
-     'max_depth':max_depth,
-     'min_samples_leaf':min_samples_leaf,
-     'min_samples_split':min_samples_split
-}
+X['bowl_team'] = labeled.fit_transform(X['bowl_team'])
+X['bowl_team'].head(10)
 
-# rf=RandomizedSearchCV(estimator=regressor,param_distributions= parameters,n_iter=2,cv=5,n_jobs=-1)
+X['bowler'] = labeled.fit_transform(X['bowler'])
+X['bowler'].head(10)
+X['batsman'] = labeled.fit_transform(X['batsman'])
+X['batsman'].head(10)
 
-# rf.fit(X_train, y_train)
+from sklearn.model_selection import train_test_split    
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 42)
 
-# print(" Results from Random Search " )
-# print("\n The best estimator across ALL searched params:\n", rf.best_estimator_)
-# print("\n The best score across ALL searched params:\n", rf.best_score_)
-# print("\n The best parameters across ALL searched params:\n", rf.best_params_)
-sns.barplot(x='venue',y='total',data=df)
-plt.show()
+from sklearn.preprocessing import StandardScaler    
 
+scaler = StandardScaler()  
+
+X_train = scaler.fit_transform(X_train)        
+X_test = scaler.transform(X_test)   
+
+
+from sklearn.ensemble import RandomForestRegressor      
+model=RandomForestRegressor()      
+model.fit(X_train,y_train) 
+print("Accuracy :",model.score(X_test,y_test))
+X_dataframe = X_train.tolist() 
+X_dataframe = pd.DataFrame(X_train)
+feature_important = model.feature_importances_
+print("feature_important :",feature_important)
+print(feature_important)
+total = sum(feature_important)
+new = [value * 100 / total for value in feature_important]
+new = np.round(new,2)
+keys = list(X_dataframe.columns)
+feature_importances = pd.DataFrame()
+feature_importances['Features'] = keys
+feature_importances['Importance (%)'] = new
+feature_importances = feature_importances.sort_values(['Importance (%)'],ascending=False).reset_index(drop=True)
+print(feature_importances)
